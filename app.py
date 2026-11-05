@@ -1,3 +1,4 @@
+import time
 import streamlit as st
 import requests
 from io import BytesIO
@@ -16,7 +17,7 @@ APP_PRICE = "$200"
 
 # غيّر الأسماء دي من Secrets لو Google غيّرتها (TEXT_MODEL / IMAGE_MODEL)
 TEXT_MODEL = st.secrets.get("TEXT_MODEL", "gemini-3.8-flash")
-IMAGE_MODEL = st.secrets.get("IMAGE_MODEL", "gemini-3.8-flash-image")
+IMAGE_MODEL = st.secrets.get("IMAGE_MODEL", "gemini-2.5-flash-image")
 
 # التسجيل على Telegram مقفول إلا لو فعّلته صراحة: LOG_TO_TELEGRAM = true
 LOG_ENABLED = bool(st.secrets.get("LOG_TO_TELEGRAM", False))
@@ -131,13 +132,22 @@ def generate_text_stream(u, history="", extra_parts=None):
     """history لازم يتحسب قبل ما رسالة الطالب تتضاف، عشان ماتتكررش."""
     full = MY_STYLE + f"\nGrade: {grade}, Subject: {subject}, Mode: {mode}\nHistory:\n{history}\nStudent: {u}"
     contents = [full] + (extra_parts or [])
-    try:
-        stream = client.models.generate_content_stream(model=TEXT_MODEL, contents=contents)
-        for chunk in stream:
-            if chunk.text:
-                yield chunk.text
-    except Exception as e:
-        yield f"❌ Error: {e}"
+    for attempt in range(3):
+        started = False
+        try:
+            stream = client.models.generate_content_stream(model=TEXT_MODEL, contents=contents)
+            for chunk in stream:
+                if chunk.text:
+                    started = True
+                    yield chunk.text
+            return
+        except Exception as e:
+            overloaded = "503" in str(e) or "UNAVAILABLE" in str(e)
+            if overloaded and not started and attempt < 2:
+                time.sleep(2 * (attempt + 1))
+                continue
+            yield f"❌ Error: {e}"
+            return
 
 
 def generate_image(p):
