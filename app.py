@@ -8,16 +8,41 @@ from PIL import Image
 
 # ======================= الإعدادات =======================
 # Secrets المطلوبة:   _API_KEY = "..."
-# اختيارية:           CODES = ["BARQ-101", ...]
+# اختيارية:
 #                     TEXT_MODEL = "gemini-3.8-flash"
 #                     IMAGE_MODEL = "..."
 #                     FALLBACK_MODELS = ["..."]
 #                     LOG_TO_TELEGRAM = true  (+ TELEGRAM_TOKEN, TELEGRAM_CHAT_ID)
 
+# أكواد الطلبة: كل كود لطالب واحد. غيّر الاسم اللي على اليمين لاسم الطالب الحقيقي لو عايز.
+STUDENT_CODES = {
+    "BARQ-3CMS-GURE": "طالب 1",
+    "BARQ-4XUZ-5CAB": "طالب 2",
+    "BARQ-64VQ-TV75": "طالب 3",
+    "BARQ-7P9G-DANK": "طالب 4",
+    "BARQ-C88R-Q722": "طالب 5",
+    "BARQ-F36D-SFWC": "طالب 6",
+    "BARQ-F9MM-5998": "طالب 7",
+    "BARQ-G4J6-R49K": "طالب 8",
+    "BARQ-HCXY-BQGZ": "طالب 9",
+    "BARQ-JHYU-PW67": "طالب 10",
+    "BARQ-MAPM-TUY8": "طالب 11",
+    "BARQ-NQAD-N767": "طالب 12",
+    "BARQ-P9DX-VNPM": "طالب 13",
+    "BARQ-R8MM-ERWF": "طالب 14",
+    "BARQ-RBZT-2MK6": "طالب 15",
+    "BARQ-SC8D-NSKW": "طالب 16",
+    "BARQ-T3F6-5PL6": "طالب 17",
+    "BARQ-VN9C-3GVG": "طالب 18",
+    "BARQ-WKEJ-FZGF": "طالب 19",
+    "BARQ-YDH4-GKER": "طالب 20",
+}
+
 try:
-    CODES = set(st.secrets["CODES"])
+    _c = st.secrets["CODES"]  # اختياري: لو حطيت CODES في Secrets بتاخد مكان اللي فوق
+    CODES = {str(k).strip().upper(): str(v) for k, v in dict(_c).items()}
 except Exception:
-    CODES = {f"BARQ-{i}" for i in range(101, 121)}
+    CODES = dict(STUDENT_CODES)
 
 APP_PRICE = "$200"
 TEXT_MODEL = st.secrets.get("TEXT_MODEL", "gemini-3.8-flash")
@@ -29,30 +54,55 @@ st.set_page_config(page_title="Barq ⚡", page_icon="🧠", layout="wide", initi
 st.title("Barq⚡")
 
 # ======================= تسجيل الدخول =======================
+import uuid
+
+@st.cache_resource
+def active_sessions():
+    """كود -> توكن الجلسة الشغالة دلوقتي. الكود الواحد بيشتغل على جهاز واحد بس."""
+    return {}
+
 if "student_name" not in st.session_state:
     st.session_state.student_name = ""
+    st.session_state.fails = 0
 
-qp = st.query_params
-if st.session_state.student_name == "" and qp.get("code") in CODES and qp.get("name"):
-    st.session_state.student_name = qp["name"]
-    st.session_state.student_code = qp["code"]
+# شيل أي كود/اسم من الرابط (الرابط مايتشاركش بيه دخول)
+if len(st.query_params) > 0:
+    st.query_params.clear()
+
+# لو الكود اتفتح من جهاز تاني، الجلسة دي بتتقفل
+if st.session_state.student_name != "":
+    if active_sessions().get(st.session_state.get("student_code")) != st.session_state.get("login_token"):
+        st.session_state.student_name = ""
+        st.session_state.messages = []
+        st.session_state.kicked = True
 
 if st.session_state.student_name == "":
     st.markdown(f"### Barq - Only {APP_PRICE} 🔥")
+    if not CODES:
+        st.error("❌ مفيش أكواد طلبة في الكود")
+        st.stop()
+    if st.session_state.pop("kicked", False):
+        st.warning("الكود ده اتفتح على جهاز تاني فاتقفلت الجلسة دي. ادخل تاني لو ده انت 🔒")
     n = st.text_input("✍️ اكتب اسمك عشان تدخل:")
     c = st.text_input("🔑 اكتب كود الطالب:")
     if LOG_ENABLED:
         st.info("ℹ️ الأسئلة والردود ممكن تتسجل عشان نحسّن التطبيق.")
     if st.button("🚀 ادخل يلا"):
-        if n.strip() == "":
+        code = c.strip().upper()
+        if st.session_state.fails >= 5:
+            st.error("محاولات كتير غلط. اقفل الصفحة وافتحها تاني بعد شوية ⏳")
+        elif n.strip() == "":
             st.warning("اكتب اسمك الاول 😅")
-        elif c.strip() not in CODES:
+        elif code not in CODES:
+            st.session_state.fails += 1
             st.error("الكود غلط يا بطل ❌")
         else:
+            token = uuid.uuid4().hex
+            active_sessions()[code] = token  # أي جلسة قديمة بنفس الكود بتتقفل
+            st.session_state.login_token = token
             st.session_state.student_name = n.strip()
-            st.session_state.student_code = c.strip()
-            st.query_params["code"] = c.strip()
-            st.query_params["name"] = n.strip()
+            st.session_state.student_code = code
+            st.session_state.fails = 0
             st.rerun()
     st.stop()
 
