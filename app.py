@@ -18,6 +18,8 @@ APP_PRICE = "$200"
 # غيّر الأسماء دي من Secrets لو Google غيّرتها (TEXT_MODEL / IMAGE_MODEL)
 TEXT_MODEL = st.secrets.get("TEXT_MODEL", "gemini-3.8-flash")
 IMAGE_MODEL = st.secrets.get("IMAGE_MODEL", "gemini-2.5-flash-image")
+# موديلات بديلة لو الاول مشغول، في Secrets: FALLBACK_MODELS = ["اسم-موديل-تاني"]
+MODELS = [TEXT_MODEL] + list(st.secrets.get("FALLBACK_MODELS", []))
 
 # التسجيل على Telegram مقفول إلا لو فعّلته صراحة: LOG_TO_TELEGRAM = true
 LOG_ENABLED = bool(st.secrets.get("LOG_TO_TELEGRAM", False))
@@ -80,11 +82,21 @@ if st.sidebar.button("📄 حمّل اخر شرح"):
     st.session_state.want_pdf = True
 
 if st.sidebar.button("🔍 Test Connection"):
-    try:
-        r = client.models.generate_content(model=TEXT_MODEL, contents="hi")
-        st.sidebar.success(f"✅ Working! {r.text[:100]}")
-    except Exception as e:
-        st.sidebar.error(f"❌ Error: {e}")
+    err = None
+    for i in range(3):
+        try:
+            r = client.models.generate_content(model=TEXT_MODEL, contents="hi")
+            st.sidebar.success(f"✅ Working! {r.text[:100]}")
+            err = None
+            break
+        except Exception as e:
+            err = e
+            if "503" in str(e) or "UNAVAILABLE" in str(e):
+                time.sleep(2 * (i + 1))
+                continue
+            break
+    if err:
+        st.sidebar.error(f"❌ Error: {err}")
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📎 Send Homework 📸📄")
@@ -122,7 +134,7 @@ def is_error(text):
 def get_history_text():
     h = ""
     for m in st.session_state.get("messages", [])[-10:]:
-        if m.get("type") == "image" or is_error(m.get("content")):
+        if m.get("type") in ("image", "error") or is_error(m.get("content")):
             continue
         h += f"{m['role']}: {str(m['content'])[:500]}\n"
     return h
@@ -132,22 +144,28 @@ def generate_text_stream(u, history="", extra_parts=None):
     """history لازم يتحسب قبل ما رسالة الطالب تتضاف، عشان ماتتكررش."""
     full = MY_STYLE + f"\nGrade: {grade}, Subject: {subject}, Mode: {mode}\nHistory:\n{history}\nStudent: {u}"
     contents = [full] + (extra_parts or [])
-    for attempt in range(3):
-        started = False
-        try:
-            stream = client.models.generate_content_stream(model=TEXT_MODEL, contents=contents)
-            for chunk in stream:
-                if chunk.text:
-                    started = True
-                    yield chunk.text
-            return
-        except Exception as e:
-            overloaded = "503" in str(e) or "UNAVAILABLE" in str(e)
-            if overloaded and not started and attempt < 2:
-                time.sleep(2 * (attempt + 1))
-                continue
-            yield f"❌ Error: {e}"
-            return
+    last_err = None
+    for model in MODELS:
+        for attempt in range(4):
+            started = False
+            try:
+                stream = client.models.generate_content_stream(model=model, contents=contents)
+                for chunk in stream:
+                    if chunk.text:
+                        started = True
+                        yield chunk.text
+                return
+            except Exception as e:
+                last_err = e
+                overloaded = "503" in str(e) or "UNAVAILABLE" in str(e)
+                if started:
+                    yield f"\n\n❌ Error: {e}"
+                    return
+                if overloaded and attempt < 3:
+                    time.sleep(2 * (attempt + 1))
+                    continue
+                break  # جرّب الموديل اللي بعده
+    yield f"❌ Error: {last_err}"
 
 
 def generate_image(p):
@@ -186,6 +204,7 @@ def log_to_telegram(a, b):
 def save_reply(reply, user_text=""):
     """يحفظ الرد في المحادثة إلا لو كان رسالة خطأ."""
     if is_error(reply):
+        st.session_state.messages.append({"role": "assistant", "content": "⚠️ الموديل مشغول دلوقتي، جرّب تبعت تاني بعد شوية 🙏", "type": "error"})
         return
     st.session_state.messages.append({"role": "assistant", "content": reply})
     if user_text:
@@ -200,6 +219,8 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         if msg.get("type") == "image":
             st.image(msg["content"])
+        elif msg.get("type") == "error":
+            st.warning(msg["content"])
         else:
             st.markdown(msg["content"])
 
