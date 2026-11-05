@@ -151,18 +151,28 @@ def stream_with_fallback(contents, deep=False, max_tokens=None):
 st.markdown("""
 <style>
 [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"], [data-testid="collapsedControl"] {display: none !important;}
-.st-key-plus {position: fixed; bottom: 1.15rem; right: 4.6rem; z-index: 1000000; width: auto !important;}
-.st-key-plus button {border-radius: 50%; width: 2.2rem; height: 2.2rem; min-height: 0; padding: 0; font-size: 1.4rem; line-height: 1; background: transparent; border: none;}
+.st-key-plus {position: fixed; bottom: 1.2rem; left: 4rem; z-index: 1000000; width: auto !important;}
+.st-key-cam {position: fixed; bottom: 1.2rem; left: 6.9rem; z-index: 1000000; width: auto !important;}
+.st-key-plus button, .st-key-cam button {border-radius: 50%; width: 2.3rem; height: 2.3rem; min-height: 0; padding: 0; font-size: 1.6rem; font-weight: 700; line-height: 1; color: #fff; background: rgba(66,133,244,.85); border: 1px solid rgba(255,255,255,.35);}
+[data-testid="stChatInput"] textarea {padding-left: 6.2rem !important;}
+@media (max-width: 640px) {.st-key-plus {left: 1.1rem;} .st-key-cam {left: 3.9rem;}}
 [data-testid="stPopoverBody"] {max-height: 70vh; overflow-y: auto; min-width: min(380px, 90vw);}
 .stApp {padding-bottom: 4rem;}
 </style>
 """, unsafe_allow_html=True)
 
 with st.container(key="plus"):
-    S = st.popover("➕")
+    S = st.popover("+")
+
+with st.container(key="cam"):
+    st.button("📷", key="cam_btn", on_click=lambda: st.session_state.update(cam_open=True))
 
 # ======================= الإعدادات والقوائم (جوه الـ +) =======================
 S.title("⚡ Barq Settings 📚")
+if S.button("🗑️ Delete This Chat"):
+    st.session_state.messages = []
+    st.rerun()
+S.markdown("---")
 grade = S.selectbox("📚 Choose Grade:", ["1 Primary", "2 Primary", "3 Primary", "4 Primary", "5 Primary", "6 Primary", "1 Prep", "2 Prep", "3 Prep", "1 Secondary", "2 Secondary", "3 Secondary", "🎓 University - Year 1", "🎓 University - Year 2", "🎓 University - Year 3", "🎓 University - Year 4", "🎓 University - Year 5+", "🎓 Postgraduate"])
 subject = S.selectbox("📖 Choose Subject:", ["➗ Math", "🔬 Science", "📝 Arabic", "🔤 English", "🌍 Social Studies", "⚛️ Physics", "🧪 Chemistry", "🧬 Biology", "🏛️ History", "🗺️ Geography", "🇫🇷 French", "📐 Calculus / Linear Algebra", "📊 Statistics & Probability", "💻 Programming / Computer Science", "⚙️ Engineering", "🩺 Medicine", "💊 Pharmacy", "🦷 Dentistry", "🧫 Microbiology / Biochemistry", "⚖️ Law", "💼 Business / Accounting", "📈 Economics", "🧠 Psychology", "✍️ Languages & Literature", "💡 Other"])
 mode = S.radio("🎯 Mode:", ["💬 Chat & Draw 🎨", "📖 Explain Lesson 📚", "✏️ Solve Homework 🧠", "🏆 Genius Mode 🧠🔥"])
@@ -193,11 +203,6 @@ if upload_type == "🖼️ Gallery":
     gallery_file = S.file_uploader("🖼️ Choose photo", type=["jpg", "jpeg", "png", "webp"], key="gallery_new")
 else:
     doc_file = S.file_uploader("📄 Choose file", type=["pdf", "txt"], key="doc_new")
-
-S.markdown("---")
-if S.button("🗑️ Delete This Chat"):
-    st.session_state.messages = []
-    st.rerun()
 
 S.markdown("---")
 S.markdown("Made with ⚡🧠❤️ by Barq")
@@ -301,8 +306,9 @@ def save_reply(reply, user_text=""):
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# الكاميرا بره (بتتفتح بس لما تدوس عليها)
-if st.toggle("📸 كاميرا", key="cam_on"):
+# الكاميرا بتتفتح لما تدوس على 📷 جنب الـ +
+if st.session_state.get("cam_open"):
+    st.button("✖ اقفل الكاميرا", key="cam_close", on_click=lambda: st.session_state.update(cam_open=False))
     camera_file = st.camera_input("📸 Take photo", key="camera_new")
 
 # ⚡ منوّر في النص لما المحادثة تبقى فاضية
