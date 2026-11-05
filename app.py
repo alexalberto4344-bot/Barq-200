@@ -15,8 +15,8 @@ except Exception:
 APP_PRICE = "$200"
 
 # غيّر الأسماء دي من Secrets لو Google غيّرتها (TEXT_MODEL / IMAGE_MODEL)
-TEXT_MODEL = st.secrets.get("TEXT_MODEL", "gemini-2.5-flash")
-IMAGE_MODEL = st.secrets.get("IMAGE_MODEL", "gemini-2.5-flash-image")
+TEXT_MODEL = st.secrets.get("TEXT_MODEL", "gemini-3.8-flash")
+IMAGE_MODEL = st.secrets.get("IMAGE_MODEL", "gemini-3.8-flash-image")
 
 # التسجيل على Telegram مقفول إلا لو فعّلته صراحة: LOG_TO_TELEGRAM = true
 LOG_ENABLED = bool(st.secrets.get("LOG_TO_TELEGRAM", False))
