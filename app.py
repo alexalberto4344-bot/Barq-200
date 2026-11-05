@@ -31,7 +31,7 @@ if st.sidebar.button("🏆 اعملي امتحان 5 اسئلة"): st.session_st
 if st.sidebar.button("📄 حمّل اخر شرح"): st.session_state.want_pdf=True
 if st.sidebar.button("🔍 Test Connection"):
     try:
-        r=client.models.generate_content(model="gemini-3.6-flash",contents="hi"); st.sidebar.success(f"✅ Working! {r.text[:100]}")
+        r=client.models.generate_content(model="gemini-2.5-flash",contents="hi"); st.sidebar.success(f"✅ Working! {r.text[:100]}")
     except Exception as e: st.sidebar.error(f"❌ Error: {e}")
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📎 Send Homework 📸📄")
@@ -53,14 +53,14 @@ def get_history_text():
 def generate_text_stream(u):
     full=MY_STYLE+f"\nGrade: {grade}, Subject: {subject}, Mode: {mode}\nHistory:\n{get_history_text()}\nStudent: {u}"
     try:
-        stream=client.models.generate_content_stream(model="gemini-3.6-flash",contents=full)
+        stream=client.models.generate_content_stream(model="gemini-2.5-flash",contents=full)
         for chunk in stream:
             if chunk.text: yield chunk.text
         return
     except Exception as e: print(e); yield f"❌ Error: {e}"
 def generate_image(p):
     try:
-        r=client.models.generate_content(model="gemini-3.6-flash",contents=p)
+        r=client.models.generate_content(model="gemini-2.5-flash",contents=p)
         for part in r.candidates[0].content.parts:
             if part.inline_data: return Image.open(BytesIO(part.inline_data.data))
     except: return None
@@ -97,7 +97,7 @@ if uploaded_file is not None:
                 try:
                     img=Image.open(uploaded_file)
                     pr=MY_STYLE+f" Grade: {grade} - {subject}. Solve this homework photo step by step in Egyptian Arabic with LOTS of emojis. Think, solve, check, show steps, final answer, similar question."
-                    res=client.models.generate_content(model="gemini-3.8-flash",contents=[pr,img]); reply=res.text; st.markdown(reply); st.session_state.messages.append({"role":"assistant","content":reply}); log_to_telegram("photo",reply)
+                    res=client.models.generate_content(model="gemini-2.5-flash",contents=[pr,img]); reply=res.text; st.markdown(reply); st.session_state.messages.append({"role":"assistant","content":reply}); log_to_telegram("photo",reply)
                 except Exception as e: st.error(f"❌ Error: {e}")
 if doc_file is not None:
     st.sidebar.success(f"✅ File: {doc_file.name} 📄")
