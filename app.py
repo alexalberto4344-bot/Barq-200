@@ -205,6 +205,7 @@ st.markdown("""
 .st-key-plus button, .st-key-cam button {border-radius: 50%; width: 2.3rem; height: 2.3rem; min-height: 0; padding: 0; font-size: 1.6rem; font-weight: 700; line-height: 1; color: #fff; background: rgba(66,133,244,.85); border: 1px solid rgba(255,255,255,.35);}
 [data-testid="stChatInput"] textarea {padding-left: 6.2rem !important;}
 @media (max-width: 640px) {.st-key-plus {left: 1.6rem;} .st-key-cam {left: 4.3rem;}}
+[data-testid="stChatMessage"] {background: transparent !important; border: none !important; box-shadow: none !important;}
 [data-testid="stPopoverBody"] {max-height: 70vh; overflow-y: auto; min-width: min(380px, 90vw);}
 .stApp {padding-bottom: 4rem;}
 </style>
@@ -263,6 +264,8 @@ Solve Homework: step by step with emojis, final answer 🎉, then give a similar
 Explain Lesson: story or example with emojis, then ask 2 questions.
 Genius Mode: deeper answer plus a secret trick.
 For plain chat keep replies short (3-5 lines).
+Clarify words: whenever you use a hard or technical word, explain it right away in one simple line in brackets (Egyptian Arabic, with a tiny everyday example if it helps). Never leave the student with a word he may not understand.
+If the student writes a word or sentence you do not understand (typo, unclear slang, mixed languages), do NOT ignore it and do NOT make something up: say what you think he meant ("قصدك ...؟") in one short line, answer based on that best guess, and tell him to correct you if you got it wrong. If you really cannot guess, ask him one short question.
 If you are not sure about something, say so honestly in a friendly way instead of guessing."""
 
 
@@ -361,8 +364,9 @@ if st.session_state.get("cam_open"):
     camera_file = st.camera_input("📸 Take photo", key="camera_new")
 
 # ⚡ منوّر في النص لما المحادثة تبقى فاضية
+hero_ph = st.empty()
 if not st.session_state.messages:
-    st.markdown("""
+    hero_ph.markdown("""
 <style>
 .barq-hero {display: flex; justify-content: center; align-items: center; margin: 10vh 0 6vh 0; position: relative;}
 .barq-hero::before {content: ""; position: absolute; width: 190px; height: 190px; border-radius: 50%;
@@ -392,6 +396,7 @@ for msg in st.session_state.messages:
 
 # امتحان
 if st.session_state.get("want_quiz"):
+    hero_ph.empty()
     st.session_state.want_quiz = False
     hist = get_history_text()
     with st.chat_message("assistant"):
@@ -458,6 +463,7 @@ if doc_file is not None:
 # شات
 prompt = st.chat_input("Ask Barq anything... ⚡🧠😂")
 if prompt:
+    hero_ph.empty()
     hist = get_history_text()  # قبل ما نضيف رسالة الطالب
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
