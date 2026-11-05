@@ -26,8 +26,7 @@ FALLBACKS = list(st.secrets.get("FALLBACK_MODELS", []))
 LOG_ENABLED = bool(st.secrets.get("LOG_TO_TELEGRAM", False))
 
 st.set_page_config(page_title="Barq ⚡", page_icon="🧠", layout="wide", initial_sidebar_state="collapsed")
-st.title("Barq ⚡🧠")
-st.caption("Powered by Alex 🤖 - The Smartest One 🔥⚡")
+st.title("Barq⚡")
 
 # ======================= تسجيل الدخول =======================
 if "student_name" not in st.session_state:
@@ -151,11 +150,11 @@ def stream_with_fallback(contents, deep=False, max_tokens=None):
 st.markdown("""
 <style>
 [data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"], [data-testid="collapsedControl"] {display: none !important;}
-.st-key-plus {position: fixed; bottom: 1.2rem; left: 4rem; z-index: 1000000; width: auto !important;}
-.st-key-cam {position: fixed; bottom: 1.2rem; left: 6.9rem; z-index: 1000000; width: auto !important;}
+.st-key-plus {position: fixed; bottom: 3.9rem; left: 5.7rem; z-index: 1000000; width: auto !important;}
+.st-key-cam {position: fixed; bottom: 3.9rem; left: 8.4rem; z-index: 1000000; width: auto !important;}
 .st-key-plus button, .st-key-cam button {border-radius: 50%; width: 2.3rem; height: 2.3rem; min-height: 0; padding: 0; font-size: 1.6rem; font-weight: 700; line-height: 1; color: #fff; background: rgba(66,133,244,.85); border: 1px solid rgba(255,255,255,.35);}
 [data-testid="stChatInput"] textarea {padding-left: 6.2rem !important;}
-@media (max-width: 640px) {.st-key-plus {left: 1.1rem;} .st-key-cam {left: 3.9rem;}}
+@media (max-width: 640px) {.st-key-plus {left: 1.6rem;} .st-key-cam {left: 4.3rem;}}
 [data-testid="stPopoverBody"] {max-height: 70vh; overflow-y: auto; min-width: min(380px, 90vw);}
 .stApp {padding-bottom: 4rem;}
 </style>
